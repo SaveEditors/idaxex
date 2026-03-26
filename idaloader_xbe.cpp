@@ -16,7 +16,7 @@ struct exehdr {}; // needed for pe.h
 #include <list>
 #include <array>
 
-#include <libXbSymbolDatabase.h>
+#include "compat_xbsdb.hpp"
 
 #include "formats/xbe.hpp"
 

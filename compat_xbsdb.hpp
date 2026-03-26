@@ -1,0 +1,27 @@
+#pragma once
+
+#include <libXbSymbolDatabase.h>
+
+// XbSymbolDatabase renamed most public APIs after the version bundled with
+// idaxex 0.42b. Keep the loader source on the newer XbSDB_* names and map the
+// older library onto them when needed.
+#if !defined(XBSDBLIB_ALL) && defined(XbSymbolLib_ALL)
+using XbSDBContextHandle = XbSymbolContextHandle;
+
+#define XbSDB_LibraryVersion XbSymbolDatabase_LibraryVersion
+#define XbSDB_GetTotalSymbols XbSymbolDatabase_GetTotalSymbols
+#define XbSDB_SetOutputMessage XbSymbolDatabase_SetOutputMessage
+#define XbSDB_LibraryToString XbSymbolDatabase_LibraryToString
+#define XbSDB_ParamToString XbSymbolDatabase_ParamToString
+#define XbSDB_CallingConventionToString XbSymbolDatabase_CallingConventionToString
+#define XbSDB_SymbolReferenceToString XbSymbolDatabase_SymbolReferenceToString
+#define XbSDB_GenerateLibraryFilter XbSymbolDatabase_GenerateLibraryFilter
+#define XbSDB_GenerateSectionFilter XbSymbolDatabase_GenerateSectionFilter
+#define XbSDB_GetKernelThunkAddress XbSymbolDatabase_GetKernelThunkAddress
+#define XbSDB_CreateContext XbSymbolDatabase_CreateXbSymbolContext
+#define XbSDBContext_RegisterLibrary XbSymbolContext_RegisterLibrary
+#define XbSDBContext_ScanManual XbSymbolContext_ScanManual
+#define XbSDBContext_ScanAllLibraryFilter XbSymbolContext_ScanAllLibraryFilter
+#define XbSDBContext_RegisterXRefs XbSymbolContext_RegisterXRefs
+#define XbSDBContext_Release XbSymbolContext_Release
+#endif

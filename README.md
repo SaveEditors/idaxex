@@ -8,6 +8,10 @@ This should have the same features as xorloser's great Xex Loader (for IDA 6 and
 
 XBE files are additionally supported, adding a few extra features over the loader included with IDA.
 
+## SaveEditors fork
+
+This fork keeps the `0.42b` codebase viable for older IDA installs while adding compatibility shims for newer IDA SDK changes and newer `XbSymbolDatabase` revisions.
+
 ## Supported formats
 
 Includes support for the following Xbox executables:
