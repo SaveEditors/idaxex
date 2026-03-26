@@ -5,11 +5,27 @@ project(idaxex)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
+if(DEFINED IDASDK)
+  set(IDASDK_DIR "${IDASDK}")
+elseif(DEFINED ENV{IDASDK})
+  set(IDASDK_DIR "$ENV{IDASDK}")
+else()
+  message(FATAL_ERROR "IDASDK is not set. Point it at the root of the full IDA C++ SDK tree.")
+endif()
+
+if(NOT EXISTS "${IDASDK_DIR}/include/pro.h")
+  message(FATAL_ERROR "IDASDK='${IDASDK_DIR}' does not look like a full IDA C++ SDK. Missing include/pro.h.")
+endif()
+
+if(NOT EXISTS "${IDASDK_DIR}/ida-cmake/common.cmake")
+  message(FATAL_ERROR "IDASDK='${IDASDK_DIR}' is missing ida-cmake/common.cmake. Set up ida-cmake inside the SDK tree first.")
+endif()
+
 # Enable AES NI intrinsic
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -maes")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -maes")
 
-include($ENV{IDASDK}/ida-cmake/common.cmake)
+include(${IDASDK_DIR}/ida-cmake/common.cmake)
 
 set(LOADER_NAME idaxex)
 set(LOADER_SOURCES
@@ -36,7 +52,7 @@ set(LOADER_SOURCES
   3rdparty/XbSymbolDatabase/src/OOVPADatabase/XNet_OOVPA.c
   3rdparty/XbSymbolDatabase/src/OOVPADatabase/XOnline_OOVPA.c
 )
-set(LOADER_INCLUDE_DIRECTORIES 3rdparty/excrypt/src 3rdparty/XbSymbolDatabase/include 3rdparty/XbSymbolDatabase/src/OOVPADatabase $ENV{IDASDK}/ldr/pe)
+set(LOADER_INCLUDE_DIRECTORIES 3rdparty/excrypt/src 3rdparty/XbSymbolDatabase/include 3rdparty/XbSymbolDatabase/src/OOVPADatabase ${IDASDK_DIR}/ldr/pe)
 add_compile_definitions(IDALDR=1)
 
 generate()
