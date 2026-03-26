@@ -24,8 +24,9 @@ struct exehdr {}; // needed for pe.h
 #include "formats/xex_headerids.hpp"
 
 #include "formats/xbe.hpp"
+#include "compat_ida_sdk.hpp"
 
-netnode ignore_micro;
+idaxex_ignore_micro_t ignore_micro;
 
 bool exclude_unneeded_sections = true;
 
@@ -93,9 +94,9 @@ void label_regsaveloads(ea_t start, ea_t end)
         for (int insn = 0; insn < hide_size; insn += 4)
         {
           if (pattern.is_prolog)
-            mark_prolog_insn(addr + insn);
+            idaxex_mark_prolog(ignore_micro, addr + insn);
           else
-            mark_epilog_insn(addr + insn);
+            idaxex_mark_epilog(ignore_micro, addr + insn);
         }
 
         addr += size;
@@ -106,7 +107,7 @@ void label_regsaveloads(ea_t start, ea_t end)
 
 void pe_add_sections(linput_t* li, XEXFile& file)
 {
-  init_ignore_micro();
+  idaxex_init_ignore_micro(ignore_micro);
 
   uint32_t first_segment_address = 0;
   for (const auto& section : file.sections())
