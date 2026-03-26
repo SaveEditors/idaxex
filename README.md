@@ -10,7 +10,23 @@ XBE files are additionally supported, adding a few extra features over the loade
 
 ## SaveEditors fork
 
-This fork keeps the `0.42b` codebase viable for older IDA installs while adding compatibility shims for newer IDA SDK changes and newer `XbSymbolDatabase` revisions.
+This fork keeps the `0.42b` codebase viable while smoothing over two compatibility breaks that matter in current setups:
+
+- newer IDA SDK ignore-micro API changes
+- newer `XbSymbolDatabase` public API names
+
+The maintained branch for that work is `0.42b-compat`.
+
+## Symbol scope
+
+`XbSymbolDatabase` only affects the XBE-side SDK naming path in `idaxex`.
+
+The Xbox 360 XEX import names still come from the loader's compiled-in name tables in:
+
+- `namegen.cpp`
+- `namegen_xtlid.cpp`
+
+That means refreshing `XbSymbolDatabase` is useful for XBE analysis, but it does not by itself refresh Xbox 360 kernel/XAM/XBDM import names.
 
 ## Supported formats
 
@@ -47,20 +63,46 @@ I recommend pairing this loader with the PPCAltivec plugin, an updated version f
 
 Make sure to clone repo recursively for excrypt submodule to get pulled in.
 
+This project requires the full IDA C++ SDK to build. A normal IDA installation is not enough on its own; it does not ship the SDK headers and `ida.lib` import library this loader needs.
+
 **Windows**
 
-Clone the repo into your idasdk\ldr\ folder and then build idaxex.sln with VS2022.
+1. Set `IDASDK` to the root of your full IDA SDK tree.
+2. Run `scripts\Check-IdaEnv.ps1` to confirm the SDK and install layout are usable.
+3. Build `idaxex.sln` with Visual Studio or `msbuild`.
+
+Example:
+
+```powershell
+$env:IDASDK = 'C:\idasdk91'
+powershell -ExecutionPolicy Bypass -File .\scripts\Check-IdaEnv.ps1
+msbuild .\idaxex.sln /p:Configuration=Release /p:Platform=x64
+```
+
+The Visual Studio project still supports the historical layout where the repo lives under `idasdk\ldr\`, but `IDASDK` is now the preferred path because it makes the checkout portable.
 
 **Linux**
 
-- Setup [ida-cmake](https://github.com/allthingsida/ida-cmake) in your idasdk folder
-- Make sure IDASDK env var points to your idasdk folder
+- Setup [ida-cmake](https://github.com/allthingsida/ida-cmake) in your IDA SDK folder
+- Make sure `IDASDK` points to your IDA SDK folder
 - Clone idaxex repo
 - Run `cmake . -DEA64=YES` inside idaxex folder
 - Run `make`
 - To build xex1tool run cmake/make inside the xex1tool folder
 
 On newest IDA you may need to edit ida-cmake common.cmake and change `libida64.so` to `libida.so` for build to link properly.
+
+## Smoke testing on a local IDA install
+
+To sanity-check loader startup against an installed copy of IDA in batch mode:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\Test-IdaLoader.ps1 `
+  -IdaExe 'C:\Program Files\IDA Professional 9.1\idat.exe' `
+  -InputFile 'C:\path\to\sample.xex'
+```
+
+That smoke test is intended to verify loader startup and processor/file-type detection. It does not replace a full SDK build.
 
 ## Credits
 Based on work by the Xenia project, XEX2.bt by Anthony, xextool 0.1 by xor37h, Xex Loader & x360_imports.idc by xorloser, xkelib, and probably many others I forgot to name.
