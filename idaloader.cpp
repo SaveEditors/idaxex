@@ -741,7 +741,7 @@ static int idaapi accept_file(
   else if (magic == MAGIC_XEX3F)
   {
     valid = 1;
-    *fileformatname = "Xbox360 XEX?/XEX3F File (>=1434)";
+    *fileformatname = "Xbox360 XEX?/XEX3F File (>=1529)";
   }
   else if (magic == MAGIC_XEX0)
   {

@@ -1,6 +1,6 @@
 # idaxex
 
-idaxex is a native loader plugin for IDA Pro 9.3, adding support for loading Xbox 360 XEX and Xbox XBE executables.
+idaxex is a native loader plugin for IDA Pro 9.4, adding support for loading Xbox 360 XEX and Xbox XBE executables.
 
 Originally started as an [IDAPython loader](https://github.com/emoose/reversing/blob/master/xbox360.py), work was continued as a native DLL to solve the shortcomings of it.
 
@@ -43,16 +43,21 @@ For PPC Altivec analysis, the PPCAltivec plugin remains a useful companion: http
 
 Make sure to clone repo recursively for excrypt submodule to get pulled in.
 
+This project requires the IDA C++ SDK that matches the target IDA installation. A normal IDA installation is not enough on its own; it does not ship the complete SDK headers and `ida.lib` import library this loader needs.
+
+Starting with IDA 9.2, Hex-Rays publishes the SDK as an open-source GitHub repository. `IDASDK` may point either to the SDK checkout root that contains `src\`, or directly to the `src\` directory. The build scripts normalize both layouts.
+
 **Windows**
 
-- Point `IDASDK` environment variable at your IDA SDK 9.3 root.
-- Run CMake to generate the VS solution: `cmake -B build -G "Visual Studio 18 2026"`
+- Point `IDASDK` environment variable at your IDA SDK 9.4 checkout root or `src` directory.
+- Run `scripts\Check-IdaEnv.ps1 -IdaExe "A:\Program Files\IDA Professional 9.4\idat.exe" -ExpectedIdaVersion 9.4 -ExpectedSdkVersion 940 -ExpectedSdkBranch releases/9.4.0 -RequireOfficialSdk -AllowPublicSdkMacroLag -RequireBuildReady` to verify the IDA install and official SDK checkout layout. The public `releases/9.4.0` SDK branch currently reports `IDA_SDK_VERSION 930`; the helper records that as `official-public-9.4-sdk-macro-lags` instead of hiding it.
+- Run CMake to generate a VS solution: `cmake -B build -G "Visual Studio 17 2022" -A x64`
 - Build with `cmake --build build` or use the `idaxex.slnx` file.
 - idaxex.dll will be built at `$IDASDK\src\bin\loaders\idaxex.dll`
 
 **Linux**
 
-- Use the IDA SDK 9.3 CMake bootstrap from `src/cmake/bootstrap.cmake` if your SDK tree has it, or the standalone [ida-cmake](https://github.com/allthingsida/ida-cmake) bootstrap if you keep that package separately.
+- Use the IDA SDK CMake bootstrap from `src/cmake/bootstrap.cmake` if your SDK tree has it, or the standalone [ida-cmake](https://github.com/allthingsida/ida-cmake) bootstrap if you keep that package separately.
 - Make sure `IDASDK` points at the SDK root.
 - Run `cmake -S . -B build` from the repo root.
 - Run `cmake --build build`.

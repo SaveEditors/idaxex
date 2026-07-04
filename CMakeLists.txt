@@ -5,44 +5,54 @@ project(idaxex)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
-if(DEFINED ENV{IDASDK})
-  file(TO_CMAKE_PATH "$ENV{IDASDK}" _IDASDK_ROOT)
-  set(_IDASDK_BOOTSTRAP "")
-  if(EXISTS "${_IDASDK_ROOT}/src/cmake/bootstrap.cmake")
-    set(_IDASDK_BOOTSTRAP "${_IDASDK_ROOT}/src/cmake/bootstrap.cmake")
-  elseif(EXISTS "${_IDASDK_ROOT}/ida-cmake/bootstrap.cmake")
-    set(_IDASDK_BOOTSTRAP "${_IDASDK_ROOT}/ida-cmake/bootstrap.cmake")
-  endif()
-
-  if(NOT _IDASDK_BOOTSTRAP)
-    message(FATAL_ERROR "Could not find ida-cmake bootstrap under $ENV{IDASDK}")
-  endif()
-
-  include("${_IDASDK_BOOTSTRAP}")
-  find_package(idasdk REQUIRED)
-
-  foreach(_IDAXEX_QT_HELPER_TARGET IN ITEMS
-      build_qt
-      qt6_external
-      qt6_external-download
-      qt6_external-configure
-      qt6_external-build
-      qt6_external-install
-    )
-    if(TARGET ${_IDAXEX_QT_HELPER_TARGET})
-      set_target_properties(${_IDAXEX_QT_HELPER_TARGET} PROPERTIES
-        EXCLUDE_FROM_ALL TRUE
-        EXCLUDE_FROM_DEFAULT_BUILD TRUE
-        EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE
-        EXCLUDE_FROM_DEFAULT_BUILD_RELEASE TRUE
-        EXCLUDE_FROM_DEFAULT_BUILD_RELWITHDEBINFO TRUE
-        EXCLUDE_FROM_DEFAULT_BUILD_MINSIZEREL TRUE
-      )
-    endif()
-  endforeach()
+if(DEFINED IDASDK)
+  set(_IDASDK_ROOT "${IDASDK}")
+elseif(DEFINED ENV{IDASDK})
+  set(_IDASDK_ROOT "$ENV{IDASDK}")
 else()
-  message(FATAL_ERROR "Set IDASDK to an IDA SDK root before configuring idaxex")
+  message(FATAL_ERROR "IDASDK is not set. Point it at the IDA SDK checkout root or src directory.")
 endif()
+
+file(TO_CMAKE_PATH "${_IDASDK_ROOT}" _IDASDK_ROOT)
+set(ENV{IDASDK} "${_IDASDK_ROOT}")
+
+set(_IDASDK_BOOTSTRAP "")
+if(EXISTS "${_IDASDK_ROOT}/src/cmake/bootstrap.cmake")
+  set(_IDASDK_BOOTSTRAP "${_IDASDK_ROOT}/src/cmake/bootstrap.cmake")
+elseif(EXISTS "${_IDASDK_ROOT}/cmake/bootstrap.cmake")
+  set(_IDASDK_BOOTSTRAP "${_IDASDK_ROOT}/cmake/bootstrap.cmake")
+elseif(EXISTS "${_IDASDK_ROOT}/ida-cmake/bootstrap.cmake")
+  set(_IDASDK_BOOTSTRAP "${_IDASDK_ROOT}/ida-cmake/bootstrap.cmake")
+endif()
+
+if(NOT _IDASDK_BOOTSTRAP)
+  message(FATAL_ERROR "Could not find IDA CMake bootstrap under IDASDK='${_IDASDK_ROOT}'. Expected src/cmake/bootstrap.cmake, cmake/bootstrap.cmake, or ida-cmake/bootstrap.cmake.")
+endif()
+
+include("${_IDASDK_BOOTSTRAP}")
+set(IDASDK "$ENV{IDASDK}" CACHE PATH "IDA SDK directory" FORCE)
+find_package(idasdk REQUIRED)
+set(_IDASDK_ACTUAL "$ENV{IDASDK}")
+
+foreach(_IDAXEX_QT_HELPER_TARGET IN ITEMS
+    build_qt
+    qt6_external
+    qt6_external-download
+    qt6_external-configure
+    qt6_external-build
+    qt6_external-install
+  )
+  if(TARGET ${_IDAXEX_QT_HELPER_TARGET})
+    set_target_properties(${_IDAXEX_QT_HELPER_TARGET} PROPERTIES
+      EXCLUDE_FROM_ALL TRUE
+      EXCLUDE_FROM_DEFAULT_BUILD TRUE
+      EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE
+      EXCLUDE_FROM_DEFAULT_BUILD_RELEASE TRUE
+      EXCLUDE_FROM_DEFAULT_BUILD_RELWITHDEBINFO TRUE
+      EXCLUDE_FROM_DEFAULT_BUILD_MINSIZEREL TRUE
+    )
+  endif()
+endforeach()
 
 ida_add_loader(idaxex
   SOURCES
@@ -72,8 +82,10 @@ ida_add_loader(idaxex
     3rdparty/excrypt/src
     3rdparty/XbSymbolDatabase/include
     3rdparty/XbSymbolDatabase/src/OOVPADatabase
+    3rdparty/mspack
     ${_IDASDK_ROOT}/src/ldr/pe
     ${_IDASDK_ROOT}/ldr/pe
+    ${_IDASDK_ACTUAL}/ldr/pe
   DEFINES
     IDALDR=1
 )
