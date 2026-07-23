@@ -1,50 +1,70 @@
 cmake_minimum_required(VERSION 3.27 FATAL_ERROR)
 
+if(DEFINED IDASDK)
+  set(_IDASDK_ROOT "${IDASDK}")
+elseif(DEFINED ENV{IDASDK})
+  set(_IDASDK_ROOT "$ENV{IDASDK}")
+else()
+  message(FATAL_ERROR "IDASDK is not set. Point it at the IDA SDK checkout root or src directory.")
+endif()
+
+file(TO_CMAKE_PATH "${_IDASDK_ROOT}" _IDASDK_ROOT)
+set(ENV{IDASDK} "${_IDASDK_ROOT}")
+
+set(_IDASDK_BOOTSTRAP "")
+set(_IDASDK_PACKAGE_DIR "")
+if(EXISTS "${_IDASDK_ROOT}/src/cmake/bootstrap.cmake")
+  set(_IDASDK_BOOTSTRAP "${_IDASDK_ROOT}/src/cmake/bootstrap.cmake")
+elseif(EXISTS "${_IDASDK_ROOT}/src/cmake/idasdk_init.cmake")
+  set(_IDASDK_PACKAGE_DIR "${_IDASDK_ROOT}/src/cmake")
+elseif(EXISTS "${_IDASDK_ROOT}/cmake/bootstrap.cmake")
+  set(_IDASDK_BOOTSTRAP "${_IDASDK_ROOT}/cmake/bootstrap.cmake")
+elseif(EXISTS "${_IDASDK_ROOT}/cmake/idasdk_init.cmake")
+  set(_IDASDK_PACKAGE_DIR "${_IDASDK_ROOT}/cmake")
+elseif(EXISTS "${_IDASDK_ROOT}/ida-cmake/bootstrap.cmake")
+  set(_IDASDK_BOOTSTRAP "${_IDASDK_ROOT}/ida-cmake/bootstrap.cmake")
+endif()
+
+if(_IDASDK_PACKAGE_DIR)
+  include("${_IDASDK_PACKAGE_DIR}/idasdk_init.cmake")
+elseif(_IDASDK_BOOTSTRAP)
+  include("${_IDASDK_BOOTSTRAP}")
+else()
+  message(FATAL_ERROR "Could not find IDA CMake integration under IDASDK='${_IDASDK_ROOT}'. Expected the IDA 9.4 CMake package or a legacy bootstrap.cmake.")
+endif()
+
 project(idaxex)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
+option(IDAXEX_STRICT_WARNINGS "Enable compiler warnings for compatibility validation" OFF)
 
-if(DEFINED ENV{IDASDK})
-  file(TO_CMAKE_PATH "$ENV{IDASDK}" _IDASDK_ROOT)
-  set(_IDASDK_BOOTSTRAP "")
-  if(EXISTS "${_IDASDK_ROOT}/src/cmake/bootstrap.cmake")
-    set(_IDASDK_BOOTSTRAP "${_IDASDK_ROOT}/src/cmake/bootstrap.cmake")
-  elseif(EXISTS "${_IDASDK_ROOT}/ida-cmake/bootstrap.cmake")
-    set(_IDASDK_BOOTSTRAP "${_IDASDK_ROOT}/ida-cmake/bootstrap.cmake")
-  endif()
+set(IDASDK "$ENV{IDASDK}" CACHE PATH "IDA SDK directory" FORCE)
+find_package(idasdk REQUIRED)
+set(_IDASDK_ACTUAL "$ENV{IDASDK}")
 
-  if(NOT _IDASDK_BOOTSTRAP)
-    message(FATAL_ERROR "Could not find ida-cmake bootstrap under $ENV{IDASDK}")
-  endif()
-
-  include("${_IDASDK_BOOTSTRAP}")
-  find_package(idasdk REQUIRED)
-
-  foreach(_IDAXEX_QT_HELPER_TARGET IN ITEMS
-      build_qt
-      qt6_external
-      qt6_external-download
-      qt6_external-configure
-      qt6_external-build
-      qt6_external-install
+foreach(_IDAXEX_QT_HELPER_TARGET IN ITEMS
+    build_qt
+    qt6_external
+    qt6_external-download
+    qt6_external-configure
+    qt6_external-build
+    qt6_external-install
+  )
+  if(TARGET ${_IDAXEX_QT_HELPER_TARGET})
+    set_target_properties(${_IDAXEX_QT_HELPER_TARGET} PROPERTIES
+      EXCLUDE_FROM_ALL TRUE
+      EXCLUDE_FROM_DEFAULT_BUILD TRUE
+      EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE
+      EXCLUDE_FROM_DEFAULT_BUILD_RELEASE TRUE
+      EXCLUDE_FROM_DEFAULT_BUILD_RELWITHDEBINFO TRUE
+      EXCLUDE_FROM_DEFAULT_BUILD_MINSIZEREL TRUE
     )
-    if(TARGET ${_IDAXEX_QT_HELPER_TARGET})
-      set_target_properties(${_IDAXEX_QT_HELPER_TARGET} PROPERTIES
-        EXCLUDE_FROM_ALL TRUE
-        EXCLUDE_FROM_DEFAULT_BUILD TRUE
-        EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE
-        EXCLUDE_FROM_DEFAULT_BUILD_RELEASE TRUE
-        EXCLUDE_FROM_DEFAULT_BUILD_RELWITHDEBINFO TRUE
-        EXCLUDE_FROM_DEFAULT_BUILD_MINSIZEREL TRUE
-      )
-    endif()
-  endforeach()
-else()
-  message(FATAL_ERROR "Set IDASDK to an IDA SDK root before configuring idaxex")
-endif()
+  endif()
+endforeach()
 
-ida_add_loader(idaxex
+ida_add_loader(idaxex_loader
+  OUTPUT_NAME idaxex
   SOURCES
     idaloader.cpp
     idaloader_xbe.cpp
@@ -72,17 +92,38 @@ ida_add_loader(idaxex
     3rdparty/excrypt/src
     3rdparty/XbSymbolDatabase/include
     3rdparty/XbSymbolDatabase/src/OOVPADatabase
+    3rdparty/mspack
     ${_IDASDK_ROOT}/src/ldr/pe
     ${_IDASDK_ROOT}/ldr/pe
+    ${_IDASDK_ACTUAL}/ldr/pe
   DEFINES
     IDALDR=1
 )
 
-target_compile_options(idaxex PRIVATE
+target_compile_options(idaxex_loader PRIVATE
   $<$<AND:$<NOT:$<C_COMPILER_ID:MSVC>>,$<COMPILE_LANGUAGE:C>>:-maes>
   $<$<AND:$<NOT:$<CXX_COMPILER_ID:MSVC>>,$<COMPILE_LANGUAGE:CXX>>:-maes>
   $<$<CXX_COMPILER_ID:Clang>:-Wno-non-pod-varargs>
   $<$<CXX_COMPILER_ID:AppleClang>:-Wno-non-pod-varargs>
 )
 
-ida_disable_warnings(idaxex)
+if(IDAXEX_STRICT_WARNINGS)
+  get_target_property(_IDAXEX_COMPILE_OPTIONS idaxex_loader COMPILE_OPTIONS)
+  if(_IDAXEX_COMPILE_OPTIONS)
+    list(FILTER _IDAXEX_COMPILE_OPTIONS EXCLUDE REGEX "^(/w|/W0|-w)$")
+    set_property(TARGET idaxex_loader PROPERTY COMPILE_OPTIONS "${_IDAXEX_COMPILE_OPTIONS}")
+  endif()
+  target_compile_options(idaxex_loader PRIVATE
+    $<$<C_COMPILER_ID:MSVC>:/W4>
+    $<$<C_COMPILER_ID:MSVC>:/wd4201>
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    $<$<CXX_COMPILER_ID:MSVC>:/wd4201>
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-Wall>
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-Wextra>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wextra>
+  )
+  unset(_IDAXEX_COMPILE_OPTIONS)
+else()
+  ida_disable_warnings(idaxex_loader)
+endif()

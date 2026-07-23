@@ -38,27 +38,36 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="UserMacros">
+    <IdaSdkRoot Condition="'$(IDASDK)' != ''">$(IDASDK)</IdaSdkRoot>
+    <IdaSdkRoot Condition="'$(IdaSdkRoot)' == ''">$(MSBuildThisFileDirectory)..\..</IdaSdkRoot>
+    <IdaSdkDir Condition="Exists('$(IdaSdkRoot)\include\pro.h')">$(IdaSdkRoot)</IdaSdkDir>
+    <IdaSdkDir Condition="'$(IdaSdkDir)' == '' and Exists('$(IdaSdkRoot)\src\include\pro.h')">$(IdaSdkRoot)\src</IdaSdkDir>
+    <IdaSdkDir Condition="'$(IdaSdkDir)' == ''">$(IdaSdkRoot)</IdaSdkDir>
+    <IdaLibPath Condition="Exists('$(IdaSdkDir)\lib\x64_win_vc_64\ida.lib')">$(IdaSdkDir)\lib\x64_win_vc_64\ida.lib</IdaLibPath>
+    <IdaLibPath Condition="'$(IdaLibPath)' == '' and Exists('$(IdaSdkDir)\lib\x64_win_64\ida.lib')">$(IdaSdkDir)\lib\x64_win_64\ida.lib</IdaLibPath>
+    <IdaLibPath Condition="'$(IdaLibPath)' == ''">$(IdaSdkDir)\lib\x64_win_vc_64\ida.lib</IdaLibPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\..\include;..\..\ldr\pe;3rdparty\XbSymbolDatabase\src\OOVPADatabase;3rdparty\XbSymbolDatabase\include;3rdparty/excrypt/src;3rdparty/mspack;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IdaSdkDir)\include;$(IdaSdkDir)\ldr\pe;3rdparty\XbSymbolDatabase\src\OOVPADatabase;3rdparty\XbSymbolDatabase\include;3rdparty/excrypt/src;3rdparty/mspack;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>__NT__;IDALDR;__EA64__;_WINDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\..\lib\x64_win_vc_64\ida.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(IdaLibPath);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\..\include;..\..\ldr\pe;3rdparty\XbSymbolDatabase\src\OOVPADatabase;3rdparty\XbSymbolDatabase\include;3rdparty/excrypt/src;3rdparty/mspack;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IdaSdkDir)\include;$(IdaSdkDir)\ldr\pe;3rdparty\XbSymbolDatabase\src\OOVPADatabase;3rdparty\XbSymbolDatabase\include;3rdparty/excrypt/src;3rdparty/mspack;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>__NT__;IDALDR;__EA64__;_WINDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\..\lib\x64_win_vc_64\ida.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(IdaLibPath);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
